@@ -1,0 +1,103 @@
+0000                             ; SERIAL INPUT ROUTINE
+0000                             ; 
+0000                STORE_ST:   EQU   0898h   
+0000                STORE_END:   EQU   089Ah   
+0000                             ; 
+0000                             ; 
+0900                          .ORG   0900h   ;  
+0900                             ; 
+0900   2A 98 08     LOAD:     LD   HL,(store_st)   ;	START ADDRESS IN HL 
+0903   CD 12 09     START1:   CALL   get_b   ;	GET BYTE 
+0906   ED 4B 9A 08            LD   BC,(store_end)   ;	PUT END ADDR IN BC 
+090A   B7                     OR   A   ;	CLEAR CARRY FLAG 
+090B   E5                     PUSH   HL   ;	SAVE HL 
+090C   ED 42                  SBC   HL,BC   ;	SUB CURRENT ADDR FROM END 
+090E   E1                     POP   HL   ;	RECOVER HL 
+090F   38 F2                  JR   C,start1   ;	JUMP IF NOT DONE 
+0911   C9                     RET      ;	ELSE RETURN TO JMON 
+0912                             ; 
+0912   DB 03        GET_B:    IN   A,03   ;	LOOK FOR START BIT 
+0914   07                     RLCA      ;	PUT IN CARRY 
+0915   30 FB                  JR   NC,get_b   ;	LOOP UNTIL START BIT FOUND 
+0917   06 28                  LD   B,40   ;	DELAY TO HALF WAY IN 
+0919   10 FE        F_C:      DJNZ   f_c   ;	FIRST CELL 
+091B   1E 00                  LD   E,00   ;	E IS RECEIVER BYTE 
+091D   0E 08                  LD   C,08   ;	C IS COUNT SET FOR 8 BITS 
+091F   DB 07        IN_BIT:   IN   A,07   ;	INPUT BIT 
+0921   07                     RLCA      ;	INTO CARRY FLAG 
+0922   CB 1B                  RR   E   ;	THEN STORE IN E 
+0924   06 27                  LD   B,39   ;	B=HALF CELL DELAY 
+0926   10 FE        N_C:      DJNZ   n_c   ;	LOOP TO NEXT CELL ARRIVES 
+0928   0D                     DEC   C   ;	DEC LOOP COUNTER 
+0929   20 F4                  JR   NZ,in_bit   ;	JUMP IF 8 BITS NOT DONE 
+092B   7B                     LD   A,E   ;	PUT INPUTTED BYTE IN A 
+092C   2F                     CPL      ;	AND INVERT TO TRUE FORM 
+092D   77                     LD   (HL),A   ;	STORE IN MEMORY 
+092E   23                     INC   HL   ;	INCREASE MEMORY POINTERS 
+092F   C9                     RET      ;	RETURN FROM SUBROUTINE
+0930                             ; 
+0930                             ; 
+0930                             ; SERIAL OUTPUT ROUTINE		
+0A00                          .ORG   0A00h   ; 
+0A00   2A 98 08               LD   HL,(store_st)   ;	PUT START IN HL 
+0A03   CD 12 0A     START2:   CALL   outb   ;	OUTPUT BYTE 
+0A06   ED 4B 9A 08            LD   BC,(store_end)   ;	END IN BC 
+0A0A   B7                     OR   A   ;	CLEAR CARRY 
+0A0B   E5                     PUSH   HL   ;	SAVE START 
+0A0C   ED 42                  SBC   HL,BC   ;	SUB END FROM START 
+0A0E   E1                     POP   HL   ;	RECOVER START 
+0A0F   38 F2                  JR   C,start2   ;	JUMP IF END <<THAN 
+0A11   C9                     RET      ;	START ELSE RETURN 
+0A12                             ; 
+0A12   3E 50        OUTB:     LD   A,80   ;	SET START BIT 
+0A14   D3 01                  OUT   (01),A   ;	OUT START BIT 
+0A16   CD 2D 0A               CALL   0A2Dh   ;	CALL DELAY 
+0A19   7E                     LD   A,(HL)   ;	GET BYTE TO OUTPUT 
+0A1A   23                     INC   HL   ;	POINT TO NEXT BYTE 
+0A1B   06 08                  LD   B,08   ;	SET COUNT FOR 8 BITS 
+0A1D   0F           LP_1:     RRCA      ;	PUT BTT INTO BIT 7
+0A1E   EE 50                  XOR   80   ;	COMPLEMENT BIT 
+0A20   D3 01                  OUT   (01),A   ;	OUTPUT IT 
+0A22   CD 2D 0A               CALL   dl_1   ;	CALL DELAY 
+0A25   10 F6                  DJNZ   lp_1   ;	DO FOR 8 BITS 
+0A27   AF                     XOR   A   ;	CLEAR FOR STOP BIT 
+0A28   D3 01                  OUT   (01),A   ;	OUT STOP BIT x2 
+0A2A   CD 2D 0A               CALL   dl_1   ;	FIRST STOP DELAY 
+0A2D   C5           DL_1:     PUSH   BC   ;	SAVE BIT COUNT 
+0A2E   06 24                  LD   B,36   ;	LOAD B WITH DELAY 
+0A30   10 FE        DL_2:     DJNZ   dl_2   ;	DO DELAY 
+0A32   C1                     POP   BC   ;	RECOVER BIT COUNT 
+0A33   C9                     RET      ;	DONE
+0A34                             ; 
+0A34                             ; 
+
+
+STORE_ST:           0898 DEFINED AT LINE 3
+                    > USED AT LINE 9
+                    > USED AT LINE 42
+STORE_END:          089A DEFINED AT LINE 4
+                    > USED AT LINE 11
+                    > USED AT LINE 44
+LOAD:               0900 DEFINED AT LINE 9
+START1:             0903 DEFINED AT LINE 10
+                    > USED AT LINE 16
+GET_B:              0912 DEFINED AT LINE 19
+                    > USED AT LINE 10
+                    > USED AT LINE 21
+F_C:                0919 DEFINED AT LINE 23
+                    > USED AT LINE 23
+IN_BIT:             091F DEFINED AT LINE 26
+                    > USED AT LINE 32
+N_C:                0926 DEFINED AT LINE 30
+                    > USED AT LINE 30
+START2:             0A03 DEFINED AT LINE 43
+                    > USED AT LINE 49
+OUTB:               0A12 DEFINED AT LINE 52
+                    > USED AT LINE 43
+LP_1:               0A1D DEFINED AT LINE 58
+                    > USED AT LINE 62
+DL_1:               0A2D DEFINED AT LINE 66
+                    > USED AT LINE 61
+                    > USED AT LINE 65
+DL_2:               0A30 DEFINED AT LINE 68
+                    > USED AT LINE 68
