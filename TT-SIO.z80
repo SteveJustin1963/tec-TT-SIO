@@ -54,14 +54,16 @@ in_bit:     IN A,07	    ;	INPUT BIT
             LD B,39	    ;	B=HALF CELL DELAY 
 
 
-
-; 
-The instruction n_c: DJNZ n_c is a loop that goes to the next cell 
-; and decrements the loop counter. The instruction LD A,E puts the inputted byte in register A. 
-; The instruction CPL inverts the byte to the true form. 
-; The instruction LD (HL),A stores the byte in memory. 
-; The instruction INC HL increases the memory pointers. 
-; The instruction RET returns from the subroutine.
+; The purpose of the following code is to loop through eight bits of inputted data and store it in memory.
+;The n_c: DJNZ n_c instruction will loop through the next cell until the condition is met. 
+; The DEC C instruction will decrement the loop counter, 
+; and the JR NZ, in_bit instruction will jump to the in_bit instruction 
+; if the 8-bit condition is not met. 
+; The LD A,E instruction will load the byte from memory into the A register, 
+; and the CPL instruction will invert the byte to the true form. 
+; The LD (HL),A instruction will store the byte in memory, and the 
+; INC HL instruction will increase the memory pointer. 
+; The RET instruction will return from the subroutine.
 n_c:        DJNZ n_c	;	LOOP TO NEXT CELL ARRIVES 
             DEC C	    ;	DEC LOOP COUNTER 
             JR NZ, in_bit ;	JUMP IF 8 BITS NOT DONE 
@@ -78,7 +80,8 @@ n_c:        DJNZ n_c	;	LOOP TO NEXT CELL ARRIVES
 
 
 
-
+; The code is checking if the store_end (end address) is less than the start address, 
+; and if it is, it will keep looping. If store_end is not less than the start address, the code will return.
 ; is a loop that outputs a byte from the location pointed to by HL, 
 ; then subtracts the value in BC from HL. 
 ; If the result is less than zero (indicated by the carry flag), 
@@ -94,7 +97,7 @@ start2:     CALL outb     	    ;	OUTPUT BYTE
 ;
 
 
-
+; Outb is used to output a byte to a port.
 ; It loads a byte into the A register, outputs it to port 1, 
 ; calls a delay function, then loads the next byte from memory into the A register.
 outb:       LD A,80	        ;	SET START BIT 
@@ -104,6 +107,9 @@ outb:       LD A,80	        ;	SET START BIT
             INC HL	        ;	POINT TO NEXT BYTE 
             LD B, 08	    ;	SET COUNT FOR 8 BITS 
 
+; The code is used to transmit a byte of data out a serial port. 
+; The data is sent least-significant bit first, with a start bit and two stop bits. 
+; The purpose of the code is to generate the appropriate signals for the data byte to be sent.
 ; The code above is for an 8-bit serial port communication. 
 ; RRCA puts the BTT into bit 7, XOR 80 complements the bit, OUT (01),A outputs it, CALL dl_1 calls the delay, 
 ; DJNZ lp_1 does it for 8 bits, XOR A clears it for the stop bit, 
