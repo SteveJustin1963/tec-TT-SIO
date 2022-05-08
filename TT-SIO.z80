@@ -10,6 +10,13 @@ store_end   equ     089Ah
 
 .org    0900h	    ;  
 
+
+; This code loads the start address of the store into HL, calls a get_b subroutine to get a byte, 
+; and then loads the end address of the store into BC. It then ORs A (which clears the carry flag) 
+; and pushes HL onto the stack. It then subtracts the current address from the 
+; end address (HL - BC), pops HL off the stack, and jumps to the start1 label if the carry flag 
+; is not set. If the carry flag is set, it returns to JMON.
+
 load:       LD HL,(store_st)	;	START ADDRESS IN HL 
 start1:     CALL get_b	        ;	GET BYTE 
             LD BC,(store_end)	;	PUT END ADDR IN BC 
@@ -20,17 +27,41 @@ start1:     CALL get_b	        ;	GET BYTE
             JR C, start1	;	JUMP IF NOT DONE 
             RET	        ;	ELSE RETURN TO JMON 
 ;
+
+
+
+; The following code snippet is looking for a start bit in order to begin reading data. 
+; It will loop until a start bit is found, and then delay for half of the data transmission time.
+
 get_b:      IN A,03	    ;	LOOK FOR START BIT 
             RLCA	    ;	PUT IN CARRY 
             JR NC, get_b ;	LOOP UNTIL START BIT FOUND 
             LD B,40	    ;	DELAY TO HALF WAY IN 
+
+
+
+;The code is counting down from 8 to 0 in the C register while loading E with 0.
 f_c:        DJNZ f_c	;	FIRST CELL 
             LD E,00	    ;	E IS RECEIVER BYTE 
             LD C,08	    ;	C IS COUNT SET FOR 8 BITS 
+
+; The in_bit instruction will input a bit from port A, 
+; and then rotate that bit into the carry flag. 
+; The bit will then be stored in register E, and B will be set to 39 (half cell delay).
 in_bit:     IN A,07	    ;	INPUT BIT 
             RLCA	    ;	INTO CARRY FLAG 
             RR E	    ;	THEN STORE IN E 
             LD B,39	    ;	B=HALF CELL DELAY 
+
+
+
+; 
+The instruction n_c: DJNZ n_c is a loop that goes to the next cell 
+; and decrements the loop counter. The instruction LD A,E puts the inputted byte in register A. 
+; The instruction CPL inverts the byte to the true form. 
+; The instruction LD (HL),A stores the byte in memory. 
+; The instruction INC HL increases the memory pointers. 
+; The instruction RET returns from the subroutine.
 n_c:        DJNZ n_c	;	LOOP TO NEXT CELL ARRIVES 
             DEC C	    ;	DEC LOOP COUNTER 
             JR NZ, in_bit ;	JUMP IF 8 BITS NOT DONE 
@@ -44,6 +75,14 @@ n_c:        DJNZ n_c	;	LOOP TO NEXT CELL ARRIVES
 ; SERIAL OUTPUT ROUTINE		
 .org    0A00h	        ; 
             LD HL,(store_st)	;	PUT START IN HL 
+
+
+
+
+; is a loop that outputs a byte from the location pointed to by HL, 
+; then subtracts the value in BC from HL. 
+; If the result is less than zero (indicated by the carry flag), 
+; it goes back to the start2 label and repeats the process. Otherwise, it returns.
 start2:     CALL outb     	    ;	OUTPUT BYTE 
             LD BC,(store_end)	;	END IN BC 
             OR A	        ;	CLEAR CARRY 
@@ -53,12 +92,28 @@ start2:     CALL outb     	    ;	OUTPUT BYTE
             JR C,start2	    ;	JUMP IF END <<THAN 
             RET	            ;	START ELSE RETURN 
 ;
+
+
+
+; It loads a byte into the A register, outputs it to port 1, 
+; calls a delay function, then loads the next byte from memory into the A register.
 outb:       LD A,80	        ;	SET START BIT 
             OUT (01),A	    ;	OUT START BIT 
             CALL 0A2Dh	    ;	CALL DELAY 
             LD A,(HL)	    ;	GET BYTE TO OUTPUT 
             INC HL	        ;	POINT TO NEXT BYTE 
             LD B, 08	    ;	SET COUNT FOR 8 BITS 
+
+; The code above is for an 8-bit serial port communication. 
+; RRCA puts the BTT into bit 7, XOR 80 complements the bit, OUT (01),A outputs it, CALL dl_1 calls the delay, 
+; DJNZ lp_1 does it for 8 bits, XOR A clears it for the stop bit, 
+; OUT (01),A outputs the stop bit, and CALL dl_1 calls the first stop delay.
+; or
+; The code is looping 8 times to output 8 bits. RRCA puts the bit to be sent into the 7th bit, 
+; then XOR 80 complements that bit. OUT (01),A sends the bit out. 
+; CALL dl_1 calls a delay subroutine, then DJNZ lp_1 loops back until 8 bits have been sent. 
+; XOR A clears the accumulator for the stop bit, OUT (01),A sends the stop bit, 
+; then CALL dl_1 calls another delay subroutine.
 lp_1:       RRCA	        ;	PUT BTT INTO BIT 7
             XOR 80	        ;	COMPLEMENT BIT 
             OUT (01),A	    ;	OUTPUT IT 
@@ -67,6 +122,9 @@ lp_1:       RRCA	        ;	PUT BTT INTO BIT 7
             XOR A       	;	CLEAR FOR STOP BIT 
             OUT (01),A	    ;	OUT STOP BIT x2 
             CALL dl_1	    ;	FIRST STOP DELAY 
+
+; This code delays for a number of clock cycles equal to the value in the B register. 
+; The clock speed is determined by the system clock.  
 dl_1:       PUSH BC	        ;	SAVE BIT COUNT 
             LD B,36	        ;	LOAD B WITH DELAY 
 dl_2:       DJNZ dl_2   	;	DO DELAY 
