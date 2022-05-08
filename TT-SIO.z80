@@ -1,3 +1,7 @@
+; This is a serial input and output routine. The store_st and store_end variables define the start and end address 
+; in memory where the data will be stored. The get_b subroutine gets a byte from the serial port and stores it in memory. 
+; The outb subroutine outputs a byte to the serial port. The dl_1 and dl_2 subroutines provide delays. 
+
 ; SERIAL INPUT ROUTINE
 ;
 store_st    equ     0898h 
